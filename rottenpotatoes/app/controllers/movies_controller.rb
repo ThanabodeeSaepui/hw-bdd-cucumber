@@ -1,3 +1,6 @@
+require 'uri'
+require 'net/http'
+require 'json'
 class MoviesController < ApplicationController
 
   def show
@@ -55,6 +58,26 @@ class MoviesController < ApplicationController
     @movie.destroy
     flash[:notice] = "Movie '#{@movie.title}' deleted."
     redirect_to movies_path
+  end
+
+  def search_tmdb
+    title = params[:search_terms][:title]
+    api_key = "fbc366092c54ff98967f908e634acd23"
+    uri = URI("https://api.themoviedb.org/3/search/movie?api_key=#{api_key}&language=en-US&query=#{title}&page=1&include_adult=false")
+    res = Net::HTTP.get_response(uri)
+    data = JSON.parse(res.body)
+    if data["results"].length() == 0 #Sad path (no result found)
+      flash[:notice] = "'Movie That Does Not Exist' was not found in TMDb."
+      redirect_to movies_path
+      return
+    else
+      item = data["results"][0] #first result
+      @movies = {
+        "title" => item["title"],
+        "release_date" => item["release_date"]
+      }
+      return
+    end
   end
 
 end
